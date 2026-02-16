@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedZone Store</title>
+<style>
+body{font-family:Arial;margin:0;background:#f4f4f4;direction:rtl}
+header{background:#111;color:#fff;padding:15px;text-align:center;display:flex;justify-content:space-between;align-items:center}
+nav{background:#222;padding:10px;text-align:center}
+nav button{margin:5px;padding:8px 15px;background:#007bff;color:#fff;border:none;border-radius:5px;cursor:pointer}
+.section{display:none;padding:20px}
+.products{display:flex;flex-wrap:wrap;gap:15px;justify-content:center}
+.card{background:#fff;width:220px;padding:10px;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,0.1);text-align:center}
+.card img{width:100%;height:150px;object-fit:cover;border-radius:8px}
+button.buy{background:#28a745;color:#fff;border:none;padding:6px 10px;border-radius:5px;cursor:pointer}
+input,select{padding:6px;margin:5px;width:90%}
+#cartBox{position:fixed;bottom:10px;left:10px;background:#ff5722;color:#fff;padding:10px;border-radius:8px}
+a.productLink{display:inline-block;margin-top:5px;text-decoration:none;color:#007bff;}
+a.productLink:hover{text-decoration:underline;}
+#langSelect{padding:5px;border-radius:5px;margin-left:10px;}
+</style>
+</head>
+<body>
+
+<header>
+<div>
+<h1 id="storeTitle">🛍️ MedZone Store</h1>
+</div>
+<div>
+<select id="langSelect" onchange="changeLanguage(this.value)">
+<option value="ar">العربية</option>
+<option value="en">English</option>
+<option value="fr">Français</option>
+<option value="es">Español</option>
+<option value="de">Deutsch</option>
+<option value="zh">中文</option>
+<option value="ja">日本語</option>
+<option value="ru">Русский</option>
+<option value="hi">हिन्दी</option>
+<option value="pt">Português</option>
+</select>
+<span id="userBox"></span>
+</div>
+</header>
+
+<nav>
+<button onclick="showSection('home')" id="navHome">الرئيسية</button>
+<button onclick="showSection('cart')" id="navCart">السلة</button>
+<button onclick="showSection('admin')" id="navAdmin">لوحة التحكم</button>
+<button onclick="logout()" id="navLogout">تسجيل خروج</button>
+</nav>
+
+<div id="login" class="section">
+<h2 id="loginTitle">تسجيل الدخول</h2>
+<input id="username" placeholder="اكتب اسمك">
+<button onclick="login()" id="loginBtn">دخول</button>
+</div>
+
+<div id="home" class="section">
+<h2 id="productsTitle">المنتجات</h2>
+<div class="products" id="products"></div>
+</div>
+
+<div id="cart" class="section">
+<h2 id="cartTitle">🛒 سلة المشتريات</h2>
+<div id="cartItems"></div>
+<h3 id="totalPrice"></h3>
+</div>
+
+<div id="admin" class="section">
+<h2 id="adminTitle">➕ إضافة منتج</h2>
+<input id="pname" placeholder="اسم المنتج">
+<input id="pprice" type="number" placeholder="السعر بالدولار">
+<input id="pimage" placeholder="رابط الصورة (.jpg أو .png)">
+<input id="plink" placeholder="رابط خارجي (اختياري)">
+<select id="pcategory">
+<option value="عام">عام</option>
+<option value="ألعاب">ألعاب</option>
+<option value="هواتف">هواتف</option>
+<option value="ملابس">ملابس</option>
+<option value="رقمي">منتج رقمي</option>
+</select>
+<button onclick="addProduct()" id="addBtn">إضافة</button>
+</div>
+
+<div id="cartBox">
+<span id="cartTotalLabel">المجموع:</span> <span id="miniTotal">0</span> USD
+</div>
+
+<script>
+// --- الترجمات ---
+const translations = {
+  ar: {storeTitle:"🛍️ MedZone Store",navHome:"الرئيسية",navCart:"السلة",navAdmin:"لوحة التحكم",navLogout:"تسجيل خروج",loginTitle:"تسجيل الدخول",loginBtn:"دخول",productsTitle:"المنتجات",cartTitle:"🛒 سلة المشتريات",checkoutBtn:"إتمام الدفع",adminTitle:"➕ إضافة منتج",cartTotalLabel:"المجموع:"},
+  en: {storeTitle:"🛍️ MedZone Store",navHome:"Home",navCart:"Cart",navAdmin:"Admin Panel",navLogout:"Logout",loginTitle:"Login",loginBtn:"Login",productsTitle:"Products",cartTitle:"🛒 Shopping Cart",checkoutBtn:"Checkout",adminTitle:"➕ Add Product",cartTotalLabel:"Total:"},
+  fr: {storeTitle:"🛍️ MedZone Store",navHome:"Accueil",navCart:"Panier",navAdmin:"Admin",navLogout:"Déconnexion",loginTitle:"Connexion",loginBtn:"Entrer",productsTitle:"Produits",cartTitle:"🛒 Panier",checkoutBtn:"Payer",adminTitle:"➕ Ajouter un produit",cartTotalLabel:"Total:"},
+  es: {storeTitle:"🛍️ MedZone Store",navHome:"Inicio",navCart:"Carrito",navAdmin:"Admin",navLogout:"Cerrar sesión",loginTitle:"Iniciar sesión",loginBtn:"Entrar",productsTitle:"Productos",cartTitle:"🛒 Carrito de compras",checkoutBtn:"Pagar",adminTitle:"➕ Añadir producto",cartTotalLabel:"Total:"},
+  de: {storeTitle:"🛍️ MedZone Store",navHome:"Startseite",navCart:"Warenkorb",navAdmin:"Admin-Panel",navLogout:"Abmelden",loginTitle:"Anmeldung",loginBtn:"Einloggen",productsTitle:"Produkte",cartTitle:"🛒 Warenkorb",checkoutBtn:"Bezahlen",adminTitle:"➕ Produkt hinzufügen",cartTotalLabel:"Gesamt:"},
+  zh: {storeTitle:"🛍️ MedZone Store",navHome:"首页",navCart:"购物车",navAdmin:"管理面板",navLogout:"登出",loginTitle:"登录",loginBtn:"进入",productsTitle:"产品",cartTitle:"🛒 购物车",checkoutBtn:"结账",adminTitle:"➕ 添加产品",cartTotalLabel:"总计:"},
+  ja: {storeTitle:"🛍️ MedZone Store",navHome:"ホーム",navCart:"カート",navAdmin:"管理パネル",navLogout:"ログアウト",loginTitle:"ログイン",loginBtn:"ログイン",productsTitle:"製品",cartTitle:"🛒 カート",checkoutBtn:"チェックアウト",adminTitle:"➕ 製品を追加",cartTotalLabel:"合計:"},
+  ru: {storeTitle:"🛍️ MedZone Store",navHome:"Главная",navCart:"Корзина",navAdmin:"Админ",navLogout:"Выйти",loginTitle:"Вход",loginBtn:"Войти",productsTitle:"Товары",cartTitle:"🛒 Корзина",checkoutBtn:"Оплатить",adminTitle:"➕ Добавить продукт",cartTotalLabel:"Итого:"},
+  hi: {storeTitle:"🛍️ MedZone Store",navHome:"मुख्य पृष्ठ",navCart:"कार्ट",navAdmin:"एडमिन पैनल",navLogout:"लॉगआउट",loginTitle:"लॉगिन",loginBtn:"प्रवेश करें",productsTitle:"उत्पाद",cartTitle:"🛒 शॉपिंग कार्ट",checkoutBtn:"चेकआउट",adminTitle:"➕ उत्पाद जोड़ें",cartTotalLabel:"कुल:"},
+  pt: {storeTitle:"🛍️ MedZone Store",navHome:"Início",navCart:"Carrinho",navAdmin:"Admin",navLogout:"Sair",loginTitle:"Login",loginBtn:"Entrar",productsTitle:"Produtos",cartTitle:"🛒 Carrinho",checkoutBtn:"Pagar",adminTitle:"➕ Adicionar produto",cartTotalLabel:"Total:"}
+};
+
+// --- المنتجات والسلة ---
+let products = [
+{
+  name:"PS5 Digital Edition",
+  price:480,
+  image:"https://i.imgur.com/4Q1FvFN.jpg",
+  link:"#", // هنا يمكن وضع رابط PayPal لاحقًا
+  category:"ألعاب"
+}
+];
+localStorage.setItem("products",JSON.stringify(products));
+let cart=JSON.parse(localStorage.getItem("cart"))||[];
+let user=localStorage.getItem("user");
+
+// --- وظائف ---
+function showSection(id){document.querySelectorAll('.section').forEach(s=>s.style.display="none");document.getElementById(id).style.display="block";}
+function login(){let name=document.getElementById("username").value;if(name){localStorage.setItem("user",name);user=name;updateUser();showSection("home");}}
+function logout(){localStorage.removeItem("user");location.reload();}
+function updateUser(){if(user){document.getElementById("userBox").innerHTML="مرحباً "+user;}else{showSection("login");}}
+function addProduct(){let p={name:pname.value,price:parseFloat(pprice.value),image:pimage.value,link:"#",category:pcategory.value};products.push(p);localStorage.setItem("products",JSON.stringify(products));renderProducts();alert("تمت الإضافة");}
+function renderProducts(){let container=document.getElementById("products");container.innerHTML="";products.forEach((p,i)=>{container.innerHTML+=`<div class="card"><img src="${p.image}"><h3>${p.name}</h3><p>${p.price} USD</p><a href="${p.link}" class="productLink" target="_blank">اشتر الآن</a><br><br><button class="buy" onclick="addToCart(${i})">أضف للسلة</button></div>`;});}
+function addToCart(i){cart.push(products[i]);localStorage.setItem("cart",JSON.stringify(cart));updateCart();}
+function updateCart(){let box=document.getElementById("cartItems");let total=0;box.innerHTML="";cart.forEach(p=>{total+=p.price;box.innerHTML+=`<p>${p.name} - ${p.price} USD</p>`;});document.getElementById("totalPrice").innerText="المجموع: "+total+" USD";document.getElementById("miniTotal").innerText=total;}
+function changeLanguage(lang){currentLang=lang;for(let key in translations[lang]){if(document.getElementById(key))document.getElementById(key).innerText=translations[lang][key];}}
+let currentLang="ar";
+updateUser();renderProducts();updateCart();showSection(user?"home":"login");changeLanguage("ar");
+</script>
+
+</body>
+</html>
